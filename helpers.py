@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+############ ENVIRONMENT ######################
 
 class NormalizedEnv(gym.ActionWrapper):
     """ Wrap action """
@@ -43,21 +44,21 @@ class HeuristicPendulumAgent:
         
         
 class DDPGAgent:
-    def __init__(self, sigma, tau = 0.5, theta = 0.5, OUNoise = False):
+    def __init__(self, sigma, device, tau = 0.5, theta = 0.5, OUNoise = False):
         if OUNoise:
             self.noise = OUActionNoise(theta, sigma)
         else:
             self.noise = GaussianActionNoise(sigma)
         
         self.tau = tau
-        
-        self.Q_network = QNetwork().to(device)
-        self.policy_network = PolicyNetwork().to(device)
-        self.target_Q_network = QNetwork().to(device)
-        self.target_policy_network = PolicyNetwork().to(device)
+        self.device = device
+        self.Q_network = QNetwork().to(self.device)
+        self.policy_network = PolicyNetwork().to(self.device)
+        self.target_Q_network = QNetwork().to(self.device)
+        self.target_policy_network = PolicyNetwork().to(self.device)
         
     def compute_action(self, state, deterministic = True):
-        state = torch.tensor(state, dtype=torch.float32).to(device) 
+        state = torch.tensor(state, dtype=torch.float32).to(self.device) 
         action = self.policy_network(state).detach().numpy()
         
         if not deterministic:
@@ -132,7 +133,7 @@ class GaussianActionNoise:
         
     def get_noisy_action(self, action):
         noisy_action = action + np.random.normal(0, self.sigma)
-        return max(-1, min(1, noisy_action))
+        return np.clip(noisy_action, -1, 1)
 
 class OUActionNoise:
     def __init__(self, theta, sigma):
@@ -143,7 +144,7 @@ class OUActionNoise:
     def get_noisy_action(self, action):
         self.evolve_state()
         noisy_action = action + self.noise        
-        return max(-1, min(1, noisy_action))
+        return np.clip(noisy_action, -1, 1)
     
     def evolve_state():
         self.noise = (1-self.theta)*self.noise + np.random.normal(0, self.sigma)
