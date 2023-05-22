@@ -57,9 +57,12 @@ class DDPGAgent:
         self.target_Q_network = QNetwork().to(self.device)
         self.target_policy_network = PolicyNetwork().to(self.device)
         
-    def compute_action(self, state, deterministic = True):
+    def compute_action(self, state, deterministic = True, use_target = False):
         state = torch.tensor(state, dtype=torch.float32).to(self.device) 
-        action = self.policy_network(state).detach().numpy()
+        if use_target:
+            action = self.target_policy_network(state).detach().numpy()
+        else:
+            action = self.policy_network(state).detach().numpy()
         
         if not deterministic:
             action = self.noise.get_noisy_action(action)
