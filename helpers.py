@@ -3,6 +3,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import copy
 
 ############ ENVIRONMENT ######################
 
@@ -44,21 +45,20 @@ class HeuristicPendulumAgent:
         
         
 class DDPGAgent:
-    def __init__(self, sigma, device, tau = 0.5, theta = 0.5, OUNoise = False):
+    def __init__(self, sigma, tau = 0.5, theta = 0.5, OUNoise = False):
         if OUNoise:
             self.noise = OUActionNoise(theta, sigma)
         else:
             self.noise = GaussianActionNoise(sigma)
         
         self.tau = tau
-        self.device = device
-        self.Q_network = QNetwork().to(self.device)
-        self.policy_network = PolicyNetwork().to(self.device)
-        self.target_Q_network = QNetwork().to(self.device)
-        self.target_policy_network = PolicyNetwork().to(self.device)
+        self.Q_network = QNetwork()
+        self.policy_network = PolicyNetwork()
+        self.target_Q_network = copy.deepcopy(self.Q_network)
+        self.target_policy_network = copy.deepcopy(self.policy_network)
         
     def compute_action(self, state, deterministic = True, use_target = False):
-        state = torch.tensor(state, dtype=torch.float32).to(self.device) 
+        state = torch.tensor(state, dtype=torch.float32) 
         if use_target:
             action = self.target_policy_network(state).detach().numpy()
         else:
@@ -69,7 +69,7 @@ class DDPGAgent:
         
         return action
     
-    def update_target_params():
+    def update_target_params(self):
         for target_param, param in zip(self.target_Q_network.parameters(), self.Q_network.parameters()):
             target_param.data.copy_(target_param.data * (1.0 - self.tau) + param.data * self.tau)
         
@@ -149,5 +149,5 @@ class OUActionNoise:
         noisy_action = action + self.noise        
         return np.clip(noisy_action, -1, 1)
     
-    def evolve_state():
+    def evolve_state(self):
         self.noise = (1-self.theta)*self.noise + np.random.normal(0, self.sigma)
