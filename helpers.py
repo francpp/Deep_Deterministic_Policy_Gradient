@@ -57,7 +57,7 @@ class DDPGAgent:
         self.target_Q_network = copy.deepcopy(self.Q_network)
         self.target_policy_network = copy.deepcopy(self.policy_network)
         
-    def compute_action(self, state, deterministic = True, use_target = False):
+    def compute_action(self, state, deterministic = False, use_target = False):
         state = torch.tensor(state, dtype=torch.float32) 
         if use_target:
             action = self.target_policy_network(state).detach().numpy()
@@ -86,6 +86,9 @@ class ReplayBuffer:
         
     def store_transition(self, trans):
         if len(self.buffer)<self.max_size:           
+            self.buffer.append(trans)
+        else:
+            self.buffer.pop(0)
             self.buffer.append(trans)
     
     def batch_buffer(self, batch_size):
